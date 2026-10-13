@@ -63,6 +63,8 @@ public:
     // Detector collections
     void registerCollection(G4String);
     std::vector <G4String> collections;
+
+    G4bool killPhotons;
     
     void Print();
 

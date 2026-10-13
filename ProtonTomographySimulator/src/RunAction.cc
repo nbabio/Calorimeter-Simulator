@@ -51,6 +51,32 @@ void RunAction::BeginOfRunAction(const G4Run* run) {
     man->CreateNtupleIColumn("genID");
     man->CreateNtupleIColumn("genTrackID");
     man->FinishNtuple();
+
+
+    // Ntuple 1: optical photons born in the fiber cores
+    man->CreateNtuple("photons", "Optical photons at creation");
+    man->CreateNtupleIColumn("eventNumber");
+    man->CreateNtupleIColumn("det");
+    man->CreateNtupleIColumn("layer");
+    man->CreateNtupleIColumn("fiber");
+    man->CreateNtupleIColumn("process");
+    man->CreateNtupleIColumn("parentID");
+    man->CreateNtupleDColumn("x");
+    man->CreateNtupleDColumn("y");
+    man->CreateNtupleDColumn("z");
+    man->CreateNtupleDColumn("localx");
+    man->CreateNtupleDColumn("localy");
+    man->CreateNtupleDColumn("localz");
+    man->CreateNtupleDColumn("dirx");
+    man->CreateNtupleDColumn("diry");
+    man->CreateNtupleDColumn("dirz");
+    man->CreateNtupleDColumn("polx");
+    man->CreateNtupleDColumn("poly");
+    man->CreateNtupleDColumn("polz");
+    man->CreateNtupleDColumn("energy");
+    man->CreateNtupleDColumn("wavelength");
+    man->CreateNtupleDColumn("time");
+    man->FinishNtuple();
 }
 //----------------------------------------------------------------------//
 //----------------------------------------------------------------------//

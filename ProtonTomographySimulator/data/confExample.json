@@ -5,6 +5,10 @@
         "ySizeWorld":100,
         "zSizeWorld":100
     },
+    "Photons":
+    {
+        "killPhotons": true
+    },
     "theBeam":
     {
         "xBeamPosition": 0,

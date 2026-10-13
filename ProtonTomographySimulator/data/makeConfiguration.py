@@ -20,6 +20,7 @@ if __name__=='__main__':
     detector = copy.copy(data['Detectors'][0])
     layer = copy.copy(data['Detectors'][0]['Layers'][0])
     fiber = copy.copy(data['Detectors'][0]['Layers'][0]['Fibers'][0])
+    photons = copy.copy(data['Photons'])
     
     #Modify world directly in data
     theWorld['xSizeWorld'] = 300
@@ -28,9 +29,9 @@ if __name__=='__main__':
     #Modify beam directly in data
     theBeam['xBeamPosition'] = 0
     theBeam['yBeamPosition'] = 0
-    theBeam['zBeamPosition'] = 125
-    theBeam['xBeamSigma'] = 0.1
-    theBeam['yBeamSigma'] = 0.1
+    theBeam['zBeamPosition'] = 140
+    theBeam['xBeamSigma'] = 0.4
+    theBeam['yBeamSigma'] = 0.4
     theBeam['xDir'] = 0
     theBeam['yDir'] = 0
     theBeam['zDir'] = 0
@@ -38,10 +39,10 @@ if __name__=='__main__':
     theBeam['nStep'] = 100
     theBeam['nParticles'] = 1
     theBeam['nParticlesDistribution'] = "Constant"
-    theBeam['energy'] = 250.0
-    theBeam['energyDistribution'] = "Constant"
+    theBeam['energy'] = 220.0
+    theBeam['energyDistribution'] = "Poisson"
     theBeam['energySigma'] = 1.0
-    theBeam['tBeamSigma'] = 1.0
+    theBeam['tBeamSigma'] = 3.0
     #Modify phantoms directly in data
     thePhantoms = []
     phantom['name'] = "lung"
@@ -51,13 +52,15 @@ if __name__=='__main__':
     phantom['xDir'] = 0
     phantom['yDir'] = 0
     phantom['zDir'] = 1
-    phantom['zsize'] = 1
-    phantom['radius'] = 1
+    phantom['zsize'] = 10
+    phantom['radius'] = 10
     phantom['material'] = "lung"
     thePhantoms.append(phantom)
+    #Modify photons directly in data
+    photons['killPhotons'] = True # true = Photon is stored in the stack when it is created, false = Same as true, but the photon propagates until it is absorbed. ntuple only stores the information at the time the photon is created in both cases. false may be useful if there is a detector at the end of the scintillating fibers, or to make the visualization more realistic.
     #Modify the detectors
     theDetectors = []
-    zPos = [70, -70]
+    zPos = [25, -25]
     for z in zPos:
         theDet = copy.copy(detector)
         theDet['xPosDetector'] = 0.0
@@ -70,7 +73,7 @@ if __name__=='__main__':
         theDet['ySizeDetector'] = 80.0
         theDet['zSizeDetector'] = 15.0
         theLayers = []
-        zLayerPos = [7.0, 5.0, -5.0, -7.0]
+        zLayerPos = [-5.5, -4.5, 4.5, 5.5]
         zDirLayer = [0.0, 90.0, 0.0, 90.0]
         for i, ilayer in enumerate(zLayerPos):
             theLayer = copy.copy(layer)
@@ -90,7 +93,7 @@ if __name__=='__main__':
             FiberYsize = theLayer['ySizeLayer']
             step = FiberYsize / NFibers
             for j in range(NFibers):
-                xfiber = -theLayer['xSizeLayer']/2.0 + j * step
+                xfiber = -theLayer['xSizeLayer']/2.0 + (j+0.5) * step #Para que la fibra no se escape de la capa EN ESTA CONFIGURACIÓN
                 yfiber = 0.0
                 zfiber = 0.0
                 theFiber = copy.copy(fiber)
@@ -106,8 +109,8 @@ if __name__=='__main__':
                 theFiber['coreRadius'] = 0.25
                 theFiber['claddingRadius'] = 0.35
                 theFiber['length'] = FiberYsize/2.0
-                theFiber['coreMaterial'] = 'lead'
-                theFiber['claddingMaterial'] = 'lead'
+                theFiber['coreMaterial'] = 'scint_core'
+                theFiber['claddingMaterial'] = 'scint_clad'
                 theFibers.append(theFiber)
             theLayer['Fibers'] = theFibers
             theLayers.append(theLayer)
@@ -118,6 +121,7 @@ if __name__=='__main__':
     newData = dict()
     newData['theWorld'] = theWorld
     newData['theBeam'] = theBeam
+    newData['Photons'] = photons
     newData['Phantoms'] = thePhantoms
     newData['Detectors'] = theDetectors
 

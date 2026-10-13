@@ -84,6 +84,7 @@ ConfigurationGeometry::ConfigurationGeometry(G4String file) {
             energyDistribution = 0;
         }
 
+        killPhotons = root["Photons"].get("killPhotons", true).asBool();
 
         //Definition of the Phantoms ----------------------------------------------
         const Json::Value Phantoms = root["Phantoms"];

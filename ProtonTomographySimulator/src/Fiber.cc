@@ -108,7 +108,7 @@ void Fiber::createG4Objects(G4String name, G4LogicalVolume *mother,
     G4String FiberCorePhysicalName = G4String("FiberCorePhys_") + name;
     physicalVolumeCore = new G4PVPlacement(getRot(), getPos(), 
                                        logicalVolumeCore, FiberCorePhysicalName,
-                                       mother, false, 0, true);
+                                       mother, false, ndetId*100000 + nlayerId*1000 + nfiberId, true); // Copy number encodes the fiber identifiers: detId*100000 + layerId*1000 + fiberId (e.g. detId=1, layerId=2, fiberId=3 => copyNumber=102003)
     G4String FiberNameCladding = G4String("FiberCladding_") + name;  
     solidVolumeCladding = new G4Tubs(FiberNameCladding, coreRad, claddingRad, length, 0.0, 2.0*CLHEP::pi);
     logicalVolumeCladding = new G4LogicalVolume(solidVolumeCladding, materials[claddingMaterial], FiberNameCladding);
@@ -116,7 +116,7 @@ void Fiber::createG4Objects(G4String name, G4LogicalVolume *mother,
     physicalVolumeCladding = new G4PVPlacement(getRot(), getPos(), 
                                        logicalVolumeCladding, FiberCladdingPhysicalName,
                                        mother, false, 0, true);                   
-    
+
     // Absorbing jacket (black coating) around the cladding / Defininng the volume
     G4double jacketThickness = 0.01*CLHEP::cm;
     G4String FiberNameJacket = G4String("FiberJacket_") + name;
