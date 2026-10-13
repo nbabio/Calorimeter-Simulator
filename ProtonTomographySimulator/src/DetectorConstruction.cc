@@ -120,7 +120,7 @@ void DetectorConstruction::ConstructMaterials() {
 
     // Add the optical properties to the materials already defined in G4
     // Define a vector of energies in eV corresponding to the wavelengths of interest for optical properties: 500, 460, 435, 400, 380 nm (E = 1239.84/λ)
-    std::vector<G4double> E = {2.48*eV, 2.70*eV, 2.85*eV, 3.10*eV, 5.0*eV};
+    std::vector<G4double> E = {2.48*eV, 2.70*eV, 2.85*eV, 3.10*eV, 3.26*eV};
 
     // OPTICAL PROPERTIES MUST BE CHANGED DEPENDING ON THE FIBER MATERIALS! (Sería buena idea ponerlo en el archivo de configuración?)
 
