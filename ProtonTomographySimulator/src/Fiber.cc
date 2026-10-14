@@ -115,7 +115,7 @@ void Fiber::createG4Objects(G4String name, G4LogicalVolume *mother,
     G4String FiberCladdingPhysicalName = G4String("FiberCladdingPhys_") + name;
     physicalVolumeCladding = new G4PVPlacement(getRot(), getPos(), 
                                        logicalVolumeCladding, FiberCladdingPhysicalName,
-                                       mother, false, 0, true);                   
+                                       mother, false, ndetId*100000 + nlayerId*1000 + nfiberId, true);                   
 
     // Absorbing jacket (black coating) around the cladding / Defininng the volume
     G4double jacketThickness = 0.01*CLHEP::cm;

@@ -60,6 +60,7 @@ void RunAction::BeginOfRunAction(const G4Run* run) {
     man->CreateNtupleIColumn("layer");
     man->CreateNtupleIColumn("fiber");
     man->CreateNtupleIColumn("process");
+    man->CreateNtupleIColumn("trackID");
     man->CreateNtupleIColumn("parentID");
     man->CreateNtupleDColumn("x");
     man->CreateNtupleDColumn("y");
@@ -77,6 +78,39 @@ void RunAction::BeginOfRunAction(const G4Run* run) {
     man->CreateNtupleDColumn("wavelength");
     man->CreateNtupleDColumn("time");
     man->FinishNtuple();
+
+    // Ntuple 2: optical photons leaving the fibers
+    man->CreateNtuple("exitPhotons", "Optical photons leaving the fibers");
+    man->CreateNtupleIColumn("eventNumber");
+    man->CreateNtupleIColumn("det");
+    man->CreateNtupleIColumn("layer");
+    man->CreateNtupleIColumn("fiber");
+    man->CreateNtupleIColumn("trackID");
+    man->CreateNtupleIColumn("parentID");
+    man->CreateNtupleIColumn("process");
+    man->CreateNtupleIColumn("exitVolume");   // 0 = core, 1 = cladding
+    man->CreateNtupleIColumn("side");         // +1 / -1 fiber end
+    man->CreateNtupleDColumn("x");
+    man->CreateNtupleDColumn("y");
+    man->CreateNtupleDColumn("z");
+    man->CreateNtupleDColumn("localx");
+    man->CreateNtupleDColumn("localy");
+    man->CreateNtupleDColumn("localz");
+    man->CreateNtupleDColumn("dirInx");
+    man->CreateNtupleDColumn("dirIny");
+    man->CreateNtupleDColumn("dirInz");
+    man->CreateNtupleDColumn("dirOutx");
+    man->CreateNtupleDColumn("dirOuty");
+    man->CreateNtupleDColumn("dirOutz");
+    man->CreateNtupleDColumn("polx");
+    man->CreateNtupleDColumn("poly");
+    man->CreateNtupleDColumn("polz");
+    man->CreateNtupleDColumn("energy");
+    man->CreateNtupleDColumn("wavelength");
+    man->CreateNtupleDColumn("time");
+    man->CreateNtupleDColumn("trackLength");
+    man->FinishNtuple();
+
 }
 //----------------------------------------------------------------------//
 //----------------------------------------------------------------------//

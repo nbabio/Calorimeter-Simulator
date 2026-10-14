@@ -10,8 +10,7 @@
 #include "G4VisExecutive.hh"
 #include "G4UIExecutive.hh"
 #include "StackingAction.hh"
-
-
+#include "SteppingAction.hh"
 
 #include <getopt.h>
 #include <stdio.h>
@@ -124,12 +123,17 @@ int main(int argc,char** argv) {
         return -1;
     }
 
+    runManager->SetUserAction(myEventAction);
+
     //The command line option overrides the value of the json file
     G4bool killPhotons = geomConf->killPhotons;
     if(killPhotonsOption != -1) killPhotons = (killPhotonsOption == 1);
     G4cout << "\033[1;34m" << "Optical photons are " << (killPhotons ? "killed" : "tracked") << " after being stored" << "\033[0m" << G4endl;
     StackingAction *myStackingAction = new StackingAction(killPhotons);
     runManager->SetUserAction(myStackingAction);
+
+    SteppingAction *mySteppingAction = new SteppingAction();
+    runManager->SetUserAction(mySteppingAction);
 
     G4VisManager* visManager = new G4VisExecutive;
     

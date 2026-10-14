@@ -40,7 +40,7 @@ if __name__=='__main__':
     theBeam['nParticles'] = 1
     theBeam['nParticlesDistribution'] = "Constant"
     theBeam['energy'] = 220.0
-    theBeam['energyDistribution'] = "Poisson"
+    theBeam['energyDistribution'] = "Gaussian"
     theBeam['energySigma'] = 1.0
     theBeam['tBeamSigma'] = 3.0
     #Modify phantoms directly in data
@@ -57,7 +57,7 @@ if __name__=='__main__':
     phantom['material'] = "lung"
     thePhantoms.append(phantom)
     #Modify photons directly in data
-    photons['killPhotons'] = True # true = Photon is stored in the stack when it is created, false = Same as true, but the photon propagates until it is absorbed. ntuple only stores the information at the time the photon is created in both cases. false may be useful if there is a detector at the end of the scintillating fibers, or to make the visualization more realistic.
+    photons['killPhotons'] = False # true = Photon is stored in the stack when it is created, false = Same as true, but the photon propagates until it is absorbed. ntuple only stores the information at the time the photon is created in both cases. false may be useful if there is a detector at the end of the scintillating fibers, or to make the visualization more realistic.
     #Modify the detectors
     theDetectors = []
     zPos = [25, -25]
