@@ -40,7 +40,7 @@ void RunAction::BeginOfRunAction(const G4Run* run) {
     man->CreateNtupleIColumn("eventNumber");
     man->CreateNtupleIColumn("layer");              // 0 = front layer (first hit by the beam)
     man->CreateNtupleDColumn("energyScintillator"); // MeV
-    man->CreateNtupleDColumn("energyAbsorber");     // MeV
+    man->CreateNtupleDColumn("energyAbsorber");     // MeV, absorber behind the scintillator of this layer (0 for the last layer)
     man->CreateNtupleDColumn("x");                  // energy-weighted mean position in the scintillator (cm)
     man->CreateNtupleDColumn("y");
     man->CreateNtupleDColumn("z");

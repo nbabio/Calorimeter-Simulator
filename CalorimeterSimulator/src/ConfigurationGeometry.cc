@@ -110,16 +110,20 @@ ConfigurationGeometry::ConfigurationGeometry(G4String file) {
         G4String absorberMaterial = jCal["absorberMaterial"].asString().c_str();
         G4double absorberThickness = atof(jCal["absorberThickness"].asString().c_str()) * CLHEP::cm;
         G4String scintillatorMaterial = jCal["scintillatorMaterial"].asString().c_str();
-        G4int nLayers = jCal.get("nLayers", 0).asInt();
+        //The calorimeter is always S W S: two scintillators with the absorber between them
+        const G4int nLayers = 2;
+        if(jCal.isMember("nLayers")) {
+            G4cerr << "\033[1;33m" << "nLayers is fixed to " << nLayers << " (S W S): the value in the configuration file is ignored" << "\033[0m" << G4endl;
+        }
 
-        //The scintillator thickness is either a single number (same dz for all the layers)
-        //or an array with one dz per layer (front to back)
+        //The scintillator thickness is either a single number (same dz for both scintillators)
+        //or an array with one dz per scintillator (front, back)
         std::vector<G4double> scintillatorThickness;
         const Json::Value jdz = jCal["scintillatorThickness"];
         if(jdz.isArray()) {
             for(G4int i = 0; i < jdz.size(); i++) scintillatorThickness.push_back(jdz[i].asDouble() * CLHEP::cm);
-            if(nLayers != 0 && nLayers != (G4int) scintillatorThickness.size()) {
-                G4cerr << "\033[1;31m" << "nLayers does not match the size of scintillatorThickness" << "\033[0m" << G4endl;
+            if((G4int) scintillatorThickness.size() != nLayers) {
+                G4cerr << "\033[1;31m" << "scintillatorThickness must have " << nLayers << " values (front and back scintillators)" << "\033[0m" << G4endl;
                 goodGeometry = false;
                 return;
             }
@@ -129,7 +133,7 @@ ConfigurationGeometry::ConfigurationGeometry(G4String file) {
 
         if(xSizeCal <= 0 || ySizeCal <= 0 || absorberThickness <= 0 || scintillatorThickness.empty() ||
            *std::min_element(scintillatorThickness.begin(), scintillatorThickness.end()) <= 0) {
-            G4cerr << "\033[1;31m" << "The sizes, thicknesses and number of layers of the calorimeter have to be greater than 0" << "\033[0m" << G4endl;
+            G4cerr << "\033[1;31m" << "The sizes and thicknesses of the calorimeter have to be greater than 0" << "\033[0m" << G4endl;
             goodGeometry = false;
             return;
         }

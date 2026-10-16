@@ -1,6 +1,6 @@
 # Calorimeter Simulator
 
-A **Geant4** simulation of a **sampling calorimeter** made of alternating layers of absorber (tungsten by default) and plastic scintillator (EJ-200 / EJ-204). A particle beam (protons, pions, kaons, …) hits the calorimeter and, for every event, the program writes to a ROOT file the energy deposited layer by layer, the total energy and, optionally, every optical photon produced in the scintillators.
+A **Geant4** simulation of a **sampling calorimeter** made of a single **scintillator + absorber + scintillator** sandwich (S W S): two plastic scintillators (EJ-200 / EJ-204) with a tungsten sheet (by default) between them. A particle beam (protons, pions, kaons, …) hits the calorimeter and, for every event, the program writes to a ROOT file the energy deposited layer by layer, the total energy and, optionally, every optical photon produced in the scintillators.
 
 The geometry, the beam and the physics options are all defined in a **JSON** file, so you don't need to recompile to change the setup.
 
@@ -126,7 +126,6 @@ Full example in [confExample.json](CalorimeterSimulator/data/confExample.json). 
         "xPos": 0, "yPos": 0, "zPos": 0,
         "xDir": 0, "yDir": 0, "zDir": 0,
         "xSize": 20, "ySize": 20,
-        "nLayers": 30,
         "absorberMaterial": "tungsten", "absorberThickness": 0.2,
         "scintillatorMaterial": "EJ200", "scintillatorThickness": 1.0
     }
@@ -161,13 +160,12 @@ Full size (cm) of the air box that holds the simulation, centred at the origin. 
 | `xPos`, `yPos`, `zPos` | Position of the centre (cm) |
 | `xDir`, `yDir`, `zDir` | Rotations (degrees) |
 | `xSize`, `ySize` | Transverse size (cm) |
-| `nLayers` | Number of layers (absorber + scintillator) |
 | `absorberMaterial` | `tungsten`, `lead`, `iron`, `steel`, `uranium`, `aluminium`, `carbon`, `silicon`, … |
 | `absorberThickness` | Absorber thickness (cm) |
 | `scintillatorMaterial` | `EJ200` or `EJ204` |
-| `scintillatorThickness` | Scintillator thickness (cm). Either a number (same for every layer) or a list with one value per layer, front to back, e.g. `[1.0, 1.0, 2.0, 2.0]` |
+| `scintillatorThickness` | Scintillator thickness (cm). Either a number (same for both scintillators) or a list with the front and back values, e.g. `[1.0, 2.0]` |
 
-The total depth is `nLayers × absorberThickness + Σ scintillatorThickness`.
+The layout is fixed to **S0 W S1**, seen from the beam: the number of layers is always 2 and cannot be changed from the configuration. An `nLayers` field in the JSON is ignored with a warning. The total depth is `absorberThickness + Σ scintillatorThickness` (2.2 cm by default).
 
 ### `Photons`
 
@@ -195,9 +193,9 @@ The ROOT file contains three `TTree`s:
 | Branch | Unit | Description |
 |---|---|---|
 | `eventNumber` | — | Event number (+ `eventOffset`) |
-| `layer` | — | Layer index (0 = first layer crossed by the beam) |
+| `layer` | — | Layer index: 0 = front scintillator S0, 1 = back scintillator S1 |
 | `energyScintillator` | MeV | Energy deposited in the scintillator |
-| `energyAbsorber` | MeV | Energy deposited in the absorber |
+| `energyAbsorber` | MeV | Energy deposited in the absorber behind the scintillator of this layer (always 0 for layer 1) |
 | `x`, `y`, `z` | cm | Energy-weighted mean position of the deposit in the scintillator |
 
 **`events`**: one row per event
@@ -240,7 +238,6 @@ To produce large samples on several cores there are two scripts in [CalorimeterS
    | `-n` | 200000 | Events per dataset |
    | `-j` | 20 | Jobs per dataset |
    | `--emin`, `--emax`, `--nE` | 5, 1000, 20 | Energy range and number of energies (GeV) |
-   | `--nLayers` | 0 | Overrides the number of layers (0 = keep it) |
    | `--seed` | 1 | First seed |
 
    It writes `datasets/conf/*.json`, `datasets/jobs.txt` (one command per line) and `datasets/datasets.json` (summary).
@@ -269,9 +266,9 @@ JSON ──► ConfigurationGeometry ──► DetectorConstruction ──► wo
 ```
 
 - **[Generator.cc](CalorimeterSimulator/Generator.cc)** is the entry point. It parses the options, builds the `G4RunManager` and registers all the user classes. Then it calls `BeamOn(N)` in batch mode or opens the interactive session.
-- **[ConfigurationGeometry](CalorimeterSimulator/src/ConfigurationGeometry.cc)** reads and validates the JSON (positive sizes, calorimeter contained in the world, `nLayers` consistent with the thickness list) and converts everything to Geant4 units.
+- **[ConfigurationGeometry](CalorimeterSimulator/src/ConfigurationGeometry.cc)** reads and validates the JSON (positive sizes, calorimeter contained in the world, two values in the thickness list), fixes the number of layers to 2 and converts everything to Geant4 units.
 - **[DetectorConstruction](CalorimeterSimulator/src/DetectorConstruction.cc)** defines the materials and builds the world. Materials are NIST ones plus the EJ-200/EJ-204 scintillators with their optical properties: light yield, emission spectrum, rise/decay times, attenuation length, refractive index and Birks constant. It also places an air cone at the beam position as a visual reference (the "gantry").
-- **[Calorimeter](CalorimeterSimulator/src/Calorimeter.cc)** is a rectangular air box holding `nLayers` absorber + scintillator pairs, stacked from the +z face (where the beam enters) towards −z. The copy number of each volume is its layer index.
+- **[Calorimeter](CalorimeterSimulator/src/Calorimeter.cc)** is a rectangular air box holding S0, the absorber and S1, stacked from the +z face (where the beam enters) towards −z. The copy number of each volume is its layer index.
 - **[CalorimeterSensor](CalorimeterSimulator/src/CalorimeterSensor.cc) / [CalorimeterHit](CalorimeterSimulator/src/CalorimeterHit.cc)** is the sensitive detector attached to absorbers and scintillators. For each event it accumulates a single hit per layer and volume type, with the total energy and the energy-weighted mean position. Optical photons do not create hits.
 - **[Beam](CalorimeterSimulator/src/Beam.cc) / [PrimaryGeneratorAction](CalorimeterSimulator/src/PrimaryGeneratorAction.cc)** generate the primaries. They use a Gaussian profile in x, y and t, a constant or Gaussian energy, and a direction that follows the opening-angle grid described above.
 - **[ModularPhysicsList](CalorimeterSimulator/src/ModularPhysicsList.cc)** registers standard + extra EM physics, decays, `FTFP_BERT_HP` hadronic physics with HP elastic scattering, stopping, ions, radioactive decay and, optionally, `G4OpticalPhysics`.

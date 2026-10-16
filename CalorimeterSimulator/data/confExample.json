@@ -41,7 +41,6 @@
         "zDir":0,
         "xSize":20,
         "ySize":20,
-        "nLayers":30,
         "absorberMaterial":"tungsten",
         "absorberThickness":0.2,
         "scintillatorMaterial":"EJ200",

@@ -8,7 +8,8 @@
 // Total depth of the calorimeter                                       //
 //----------------------------------------------------------------------//
 static G4double totalDepth(G4double absorberThickness, const std::vector<G4double> &scintillatorThickness) {
-    return scintillatorThickness.size() * absorberThickness +
+    //nLayers scintillators with one absorber between each two of them
+    return (scintillatorThickness.size() - 1) * absorberThickness +
            std::accumulate(scintillatorThickness.begin(), scintillatorThickness.end(), 0.0);
 }
 //----------------------------------------------------------------------//
@@ -121,13 +122,11 @@ void Calorimeter::createG4Objects(G4LogicalVolume *mother,
     absorberLogical->SetVisAttributes(new G4VisAttributes(G4Colour(0.4, 0.4, 0.4, 0.6)));
     G4VisAttributes *scintillatorAtt = new G4VisAttributes(G4Colour(0.2, 0.5, 1.0, 0.3));
 
-    //Layers are stacked from the front face (+z) to the back face (-z). The copy number is the layer index
+    //Layers are stacked from the front face (+z) to the back face (-z): S0 W S1 W ... W S(N-1)
+    //The stack starts and ends with a scintillator. Layer i = scintillator i + the absorber behind it
+    //(the last layer has no absorber). The copy number is the layer index
     G4double zFront = sizes[2]/2.0;
     for(G4int i = 0; i < getNLayers(); i++) {
-        G4double zAbsorber = zFront - absorberThickness/2.0;
-        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, zAbsorber), absorberLogical,
-                          "absorberPhys", logicalVolume, false, i, true);
-
         //Each scintillator gets its own solid so that its thickness can change with z
         G4double dz = scintillatorThickness[i];
         G4String scintName = G4String("scintillator_") + std::to_string(i);
@@ -135,11 +134,16 @@ void Calorimeter::createG4Objects(G4LogicalVolume *mother,
         G4LogicalVolume *scintLogical = new G4LogicalVolume(scintSolid, materials[scintillatorMaterial], scintName);
         scintLogical->SetSensitiveDetector(sensor);
         scintLogical->SetVisAttributes(scintillatorAtt);
-        G4double zScint = zFront - absorberThickness - dz/2.0;
+        G4double zScint = zFront - dz/2.0;
         new G4PVPlacement(nullptr, G4ThreeVector(0, 0, zScint), scintLogical,
                           "scintillatorPhys", logicalVolume, false, i, true);
+        zFront -= dz;
 
-        zFront -= absorberThickness + dz;
+        if(i == getNLayers() - 1) break;
+        G4double zAbsorber = zFront - absorberThickness/2.0;
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, zAbsorber), absorberLogical,
+                          "absorberPhys", logicalVolume, false, i, true);
+        zFront -= absorberThickness;
     }
 }
 //----------------------------------------------------------------------//

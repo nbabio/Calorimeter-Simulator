@@ -23,16 +23,12 @@ if __name__=='__main__':
     parser.add_option('--emin', action='store', type='float', dest='emin', default=5.0, help='Minimum energy (GeV)')
     parser.add_option('--emax', action='store', type='float', dest='emax', default=1000.0, help='Maximum energy (GeV)')
     parser.add_option('--nE', action='store', type='int', dest='nE', default=20, help='Number of log(E)-spaced energies')
-    parser.add_option('--nLayers', action='store', type='int', dest='nLayers', default=0, help='Override the number of layers of the base configuration (0 = keep it)')
     parser.add_option('--seed', action='store', type='int', dest='seed', default=1, help='First random seed (each job gets a different one)')
 
     (opts, args) = parser.parse_args()
 
     with open(opts.inputFile, 'r') as file:
         base = json.load(file)
-
-    if opts.nLayers > 0:
-        base['Calorimeter']['nLayers'] = opts.nLayers
 
     #High-energy showers: no optical photons (they would be tens of millions per event)
     base['Photons']['opticalPhysics'] = False

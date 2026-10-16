@@ -6,8 +6,9 @@
 
 
 //----------------------------------------------------------------------//
-// Sampling calorimeter: a rectangular prism made of nLayers of         //
-// (absorber + scintillator). The beam enters through the +z face       //
+// Sampling calorimeter: a rectangular prism made of two scintillators  //
+// with an absorber between them: S0 W S1 (the number of layers is      //
+// fixed in ConfigurationGeometry). The beam enters through the +z face //
 // (layer 0 is the front one) and the photodetector will be placed      //
 // behind the -z face.                                                  //
 //----------------------------------------------------------------------//

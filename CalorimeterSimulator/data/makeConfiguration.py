@@ -41,9 +41,8 @@ if __name__=='__main__':
     theBeam['energyDistribution'] = "Gaussian"
     theBeam['energySigma'] = 1.0
     theBeam['tBeamSigma'] = 3.0
-    #Modify the calorimeter directly in data: a sandwich of nLayers x (absorber + scintillator)
+    #Modify the calorimeter directly in data: scintillator + tungsten + scintillator (S W S). The number of layers is fixed
     #The beam enters through the +z face (layer 0) and the photodetector will go behind the -z face
-    nLayers = 1
     calorimeter['name'] = "calorimeter"
     calorimeter['xPos'] = 0
     calorimeter['yPos'] = 0
@@ -53,11 +52,10 @@ if __name__=='__main__':
     calorimeter['zDir'] = 0
     calorimeter['xSize'] = 20
     calorimeter['ySize'] = 20
-    calorimeter['nLayers'] = nLayers
     calorimeter['absorberMaterial'] = "tungsten"
     calorimeter['absorberThickness'] = 0.2 # 2 mm
     calorimeter['scintillatorMaterial'] = "EJ200" # or "EJ204"
-    calorimeter['scintillatorThickness'] = 1.0 # dz = 1 cm. It can also be a list with one dz per layer (front to back), e.g. [1.0]*15 + [2.0]*15
+    calorimeter['scintillatorThickness'] = 1.0 # dz = 1 cm. It can also be a list with the dz of the front and back scintillators, e.g. [1.0, 2.0]
     #Modify photons directly in data
     photons['killPhotons'] = False # true = optical photons are killed as soon as they are created (there is no photodetector yet), false = they are tracked until they are absorbed
     photons['storePhotons'] = False # true = every optical photon born in a scintillator is stored in the "photons" ntuple (very large files!)
