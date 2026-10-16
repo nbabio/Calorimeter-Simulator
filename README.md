@@ -64,7 +64,7 @@ The [setup.sh](setup.sh) script does this automatically based on the machine's h
 ### 4. Build
 
 ```bash
-git clone https://github.com/<user>/Calorimeter-Simulator.git
+git clone https://github.com/nbabio/CalorimeterSimulator.git
 cd Calorimeter-Simulator
 mkdir CalorimeterSimulator-build && cd CalorimeterSimulator-build
 cmake ../CalorimeterSimulator
