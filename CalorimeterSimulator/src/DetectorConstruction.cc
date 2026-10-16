@@ -118,35 +118,62 @@ void DetectorConstruction::ConstructMaterials() {
     materials.insert(std::pair<G4String, G4Material *>("fat", man->FindOrBuildMaterial("G4_ADIPOSE_TISSUE_ICRP")));
     materials.insert(std::pair<G4String, G4Material *>("brain", man->FindOrBuildMaterial("G4_BRAIN_ICRP")));
 
-    // Add the optical properties to the materials already defined in G4
-    // Define a vector of energies in eV corresponding to the wavelengths of interest for optical properties: 500, 460, 435, 400, 380 nm (E = 1239.84/λ)
-    std::vector<G4double> E = {2.48*eV, 2.70*eV, 2.85*eV, 3.10*eV, 3.26*eV};
+    materials.insert(std::pair<G4String, G4Material *>("tungsten", man->FindOrBuildMaterial("G4_W")));
 
-    // OPTICAL PROPERTIES MUST BE CHANGED DEPENDING ON THE FIBER MATERIALS! (Sería buena idea ponerlo en el archivo de configuración?)
+    // Energy grid for the optical properties: 517 - 354 nm (E = 1239.84/λ). It covers the emission of both scintillators
+    std::vector<G4double> E = {2.40*eV, 2.60*eV, 2.80*eV, 3.00*eV, 3.20*eV, 3.50*eV};
 
-    // Core: Scintillating polystyrene
-    G4Material* core = man->FindOrBuildMaterial("G4_POLYSTYRENE");
-    auto* coreMPT = new G4MaterialPropertiesTable();
-    coreMPT->AddProperty("RINDEX",                  E, {1.59, 1.59, 1.59, 1.59, 1.59}); // Refractive index of the core material is constant for all energies
-    coreMPT->AddProperty("ABSLENGTH",               E, {3.5*m, 3.5*m, 3.0*m, 1.0*m, 0.5*m});
-    coreMPT->AddProperty("SCINTILLATIONCOMPONENT1", E, {0.10, 0.60, 1.00, 0.40, 0.05}); // Emission spectrum of the scintillator (normalized to 1)
-    coreMPT->AddConstProperty("SCINTILLATIONYIELD",         1000./MeV);  // Number of photons per MeV deposited; The real one is 8000; low for testing
-    coreMPT->AddConstProperty("RESOLUTIONSCALE",            1.0); // Controls the intrinsic dispersion/variance in photon production (var = R * mean); 1.0 = Poisson statistics; 0.0 = no variance; 
-    coreMPT->AddConstProperty("SCINTILLATIONTIMECONSTANT1", 3.2*ns); // Scintillating time decay constant
-    core->SetMaterialPropertiesTable(coreMPT); 
-    core->GetIonisation()->SetBirksConstant(0.126*mm/MeV); // Light yield per path length as a function of the energy loss per path length for a particle traversing a scintillator
-    materials.insert(std::pair<G4String, G4Material *>("scint_core", core));
+    // Plastic scintillators from Eljen Technology (polyvinyltoluene base). Values from the datasheets:
+    //                    EJ-200      EJ-204
+    // Light yield        10000/MeV   10400/MeV
+    // Emission peak      425 nm      408 nm
+    // Rise time          0.9 ns      0.7 ns
+    // Decay time         2.1 ns      1.8 ns
+    // Bulk attenuation   380 cm      160 cm
+    // Refractive index   1.58        1.58
+    // Density            1.023 g/cm3 1.023 g/cm3
+    // H:C atoms/cm3      5.17e22 : 4.69e22  (EJ-204: 5.15e22 : 4.68e22)
+    // The emission spectra are approximations of the datasheet curves (normalized to 1)
+    G4Element *elH = man->FindOrBuildElement("H");
+    G4Element *elC = man->FindOrBuildElement("C");
+    struct ScintillatorData {
+        G4String name;
+        G4double nH, nC;                       // atoms/cm3 (x1e22)
+        G4double yield, riseTime, decayTime, attLength;
+        std::vector<G4double> emissionE, emission;
+    };
+    std::vector<ScintillatorData> scintillators = {
+        {"EJ200", 5.17, 4.69, 10000./MeV, 0.9*ns, 2.1*ns, 380.*cm,
+         // 500, 480, 460, 450, 440, 430, 425, 420, 410, 400, 390 nm
+         {2.480*eV, 2.583*eV, 2.695*eV, 2.755*eV, 2.818*eV, 2.883*eV, 2.917*eV, 2.952*eV, 3.024*eV, 3.100*eV, 3.179*eV},
+         {0.05, 0.15, 0.35, 0.50, 0.70, 0.95, 1.00, 0.85, 0.45, 0.15, 0.02}},
+        {"EJ204", 5.15, 4.68, 10400./MeV, 0.7*ns, 1.8*ns, 160.*cm,
+         // 490, 470, 450, 440, 430, 420, 415, 408, 400, 390, 380 nm
+         {2.530*eV, 2.638*eV, 2.755*eV, 2.818*eV, 2.883*eV, 2.952*eV, 2.988*eV, 3.039*eV, 3.100*eV, 3.179*eV, 3.263*eV},
+         {0.05, 0.15, 0.35, 0.50, 0.70, 0.95, 1.00, 0.95, 0.60, 0.20, 0.03}}
+    };
+    for(auto &sc : scintillators) {
+        G4double massH = sc.nH * elH->GetA();
+        G4double massC = sc.nC * elC->GetA();
+        G4Material *mat = new G4Material(sc.name, 1.023*g/cm3, 2);
+        mat->AddElement(elH, massH/(massH + massC));
+        mat->AddElement(elC, massC/(massH + massC));
+        auto *mpt = new G4MaterialPropertiesTable();
+        mpt->AddProperty("RINDEX",                  E, std::vector<G4double>(E.size(), 1.58));
+        mpt->AddProperty("ABSLENGTH",               E, std::vector<G4double>(E.size(), sc.attLength));
+        mpt->AddProperty("SCINTILLATIONCOMPONENT1", sc.emissionE, sc.emission);
+        mpt->AddConstProperty("SCINTILLATIONYIELD",         sc.yield);
+        mpt->AddConstProperty("RESOLUTIONSCALE",            1.0); // 1.0 = Poisson statistics
+        mpt->AddConstProperty("SCINTILLATIONTIMECONSTANT1", sc.decayTime);
+        mpt->AddConstProperty("SCINTILLATIONRISETIME1",     sc.riseTime);
+        mat->SetMaterialPropertiesTable(mpt);
+        mat->GetIonisation()->SetBirksConstant(0.126*mm/MeV); // Typical value for plastic scintillators
+        materials.insert(std::pair<G4String, G4Material *>(sc.name, mat));
+    }
 
-    // Cladding: PMMA (plexiglass) (Not scintillating; refractive index lower than the core to ensure total internal reflection)
-    G4Material* clad = man->FindOrBuildMaterial("G4_PLEXIGLASS");
-    auto* cladMPT = new G4MaterialPropertiesTable();
-    cladMPT->AddProperty("RINDEX", E, {1.49, 1.49, 1.49, 1.49, 1.49});
-    clad->SetMaterialPropertiesTable(cladMPT);
-    materials.insert(std::pair<G4String, G4Material *>("scint_clad", clad));
-
-    // Air with RINDEX=1 so that light can exit the fiber without dying at the boundary. Add the optical properties of air
+    // Air with RINDEX=1 so that light can exit the scintillator without dying at the boundary
     auto* airMPT = new G4MaterialPropertiesTable();
-    airMPT->AddProperty("RINDEX", E, {1.0, 1.0, 1.0, 1.0, 1.0});
+    airMPT->AddProperty("RINDEX", E, std::vector<G4double>(E.size(), 1.0));
     materials["air"]->SetMaterialPropertiesTable(airMPT);
 }
 //----------------------------------------------------------------------//

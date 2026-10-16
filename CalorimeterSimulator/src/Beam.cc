@@ -5,10 +5,11 @@
 //----------------------------------------------------------------------//
 // Constructor                                                          //
 //----------------------------------------------------------------------//
-Beam::Beam(ConfigurationGeometry *g, CLHEP::HepRandomEngine* MyRndEngine_) {
+Beam::Beam(ConfigurationGeometry *g, CLHEP::HepRandomEngine* MyRndEngine_, G4double mass_) {
 
+    mass = mass_;
     myGeom = g;
-    debug = 1;
+    debug = 0;
     //Information of the beam    
     vx = -myGeom->GetMaxOpenAngle();
     vy = -myGeom->GetMaxOpenAngle();
@@ -49,7 +50,6 @@ G4int Beam::GetNParticles() {
 std::vector<G4double> Beam::fireParticle() {
 
     std::vector<G4double> vect;
-    const G4double protonmass = 938.27208943 * CLHEP::MeV;
     G4double k; 
     //Gauss
     if(myGeom->GetEnergyDistribution() == 2) {
@@ -57,8 +57,8 @@ std::vector<G4double> Beam::fireParticle() {
     } else{
         k = myGeom->GetEnergy() * CLHEP::MeV;
     }
-    G4double e = k + protonmass;
-    G4double p = sqrt(e*e - protonmass*protonmass);
+    G4double e = k + mass;
+    G4double p = sqrt(e*e - mass*mass);
  
     G4double x = myGauss->fire(myGeom->GetXBeamPosition(), myGeom->GetXBeamSigma());
     G4double y = myGauss->fire(myGeom->GetYBeamPosition(), myGeom->GetYBeamSigma());

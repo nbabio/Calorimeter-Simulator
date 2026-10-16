@@ -7,15 +7,17 @@
     },
     "Photons":
     {
-        "killPhotons": true
+        "killPhotons": true,
+        "storePhotons": false
     },
     "theBeam":
     {
+        "particle": "proton",
         "xBeamPosition": 0,
         "xBeamSigma": 0.1,
         "yBeamPosition": 0,
         "yBeamSigma": 0.1,
-        "zBeamPosition": 125,
+        "zBeamPosition": 45,
 	    "xDir": 0.0,
 	    "yDir": 0.0,
 	    "zDir": 0.0,
@@ -28,67 +30,21 @@
         "energyDistribution": "Constant",
         "tBeamSigma": 1
     },
-    "Phantoms":
-    [
-	{
-	        "name": "lung",
-            "material": "lung",
-            "xPos":0,
-            "yPos":0,
-	        "zPos":0,
-            "xDir":0,
-            "yDir":0,
-            "zDir":0,
-            "radius":1,
-            "zsize":1
-	}
-    ],	
-    "Detectors":
-    [
-        {
-            "xPosDetector":0,
-            "yPosDetector":0,
-            "zPosDetector":50,
-            "xDirDetector":0,
-            "yDirDetector":0,
-            "zDirDetector":0,
-            "xSizeDetector":80,
-            "ySizeDetector":80,
-            "zSizeDetector":20,
-            "Layers":
-            [
-                {
-                    "xPosLayer":0,
-                    "yPosLayer":0,
-                    "zPosLayer":0,
-                    "xDirLayer":0,
-                    "yDirLayer":0,
-                    "zDirLayer":0,
-                    "xSizeLayer":80,
-                    "ySizeLayer":80,
-                    "zSizeLayer":5,
-		            "Fibers":
-                    [
-                        {
-                            "xPosSensor":0,
-                            "yPosSensor":0,
-                            "zPosSensor":0,
-                            "xDirSensor":0,
-                            "yDirSensor":0,
-                            "zDirSensor":0,
-                            "xSizeSensor":2.5,
-                            "ySizeSensor":2.5,
-                            "zSizeSensor":0.03,
-                            "coreRadius":2,
-                            "claddingRadius":2.1,
-                            "outerRadius":2.2,
-                            "length":2.5,
-                            "coreMaterial":"Lead",
-                            "claddingMaterial":"Lead" 
-                        }
-                    ]
-                }
-            ]
-        }
-    ]
+    "Calorimeter":
+    {
+        "name": "calorimeter",
+        "xPos":0,
+        "yPos":0,
+        "zPos":0,
+        "xDir":0,
+        "yDir":0,
+        "zDir":0,
+        "xSize":20,
+        "ySize":20,
+        "nLayers":30,
+        "absorberMaterial":"tungsten",
+        "absorberThickness":0.2,
+        "scintillatorMaterial":"EJ200",
+        "scintillatorThickness":1.0
+    }
 }

@@ -27,12 +27,16 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(ConfigurationGeometry *myGeom_, G
     MyRndEngine->setSeed(randomSeed, 1);
     // Create the table containing all particle names
     particleTable = G4ParticleTable::GetParticleTable();
-    fProton = particleTable->FindParticle(particleName="proton");
+    fProton = particleTable->FindParticle(particleName=myGeom->GetParticleName());
+    if(fProton == nullptr) {
+        G4Exception("PrimaryGeneratorAction", "Beam001", FatalException,
+                    ("Unknown particle: " + myGeom->GetParticleName()).c_str());
+    }
     particleGun->SetParticlePosition(G4ThreeVector(0.,0.,0));
     particleGun->SetParticleDefinition(fProton);
 
     //Beam
-    beam = new Beam(myGeom, MyRndEngine);
+    beam = new Beam(myGeom, MyRndEngine, fProton->GetPDGMass());
 
     // Create the messenger file
     gunMessenger = new PrimaryGeneratorMessenger(this);

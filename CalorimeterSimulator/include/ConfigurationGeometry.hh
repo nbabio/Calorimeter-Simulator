@@ -10,10 +10,7 @@
 #include "assert.h"
 
 #include "globals.hh"
-#include "Phantom.hh"
-#include "Detector.hh"
-#include "Layer.hh"
-#include "Fiber.hh"
+#include "Calorimeter.hh"
 
 
 class ConfigurationGeometry {
@@ -46,15 +43,11 @@ public:
     G4int GetNParticles();
     G4int GetParticleDistribution();
     G4double GetMaxOpenAngle();
+    G4String GetParticleName();
 
 
-    // Detector information
-    Detector *getDetector(G4int);
-    G4int getNDetectors();
-    
-    // Detector information
-    Phantom *getPhantom(G4int);
-    G4int getNPhantoms();
+    // Calorimeter information
+    Calorimeter *getCalorimeter();
 
     //Creating the geometry
     void createG4objects(G4LogicalVolume *, 
@@ -65,6 +58,8 @@ public:
     std::vector <G4String> collections;
 
     G4bool killPhotons;
+    G4bool storePhotons;
+    G4bool opticalPhysics;
     
     void Print();
 
@@ -79,10 +74,10 @@ private:
     G4double maxOpenAngle;
     G4int nParticles, nStep;
     G4int energyDistribution, particleDistribution;
+    G4String particleName;
 
     G4double uniSizeX, uniSizeY, uniSizeZ;
-    std::vector <Detector *> detectors;
-    std::vector <Phantom *> phantoms;
+    Calorimeter *calorimeter;
     bool goodGeometry;
 
     G4VSolid *coneVolume;

@@ -31,7 +31,7 @@
 //----------------------------------------------------------------------//
 // The constructor                                                      //
 //----------------------------------------------------------------------//
-MyPhysicsList::MyPhysicsList() : G4VModularPhysicsList() {
+MyPhysicsList::MyPhysicsList(G4bool opticalPhysics) : G4VModularPhysicsList() {
 
 	RegisterPhysics( new G4EmStandardPhysics );
 	RegisterPhysics( new G4EmExtraPhysics );
@@ -42,7 +42,8 @@ MyPhysicsList::MyPhysicsList() : G4VModularPhysicsList() {
 	RegisterPhysics( new G4IonPhysics );
 	RegisterPhysics( new G4NeutronTrackingCut );     
 	RegisterPhysics( new G4RadioactiveDecayPhysics);  
-	RegisterPhysics( new G4OpticalPhysics );
+	// Optical photons are very expensive for high-energy showers: they can be switched off in the configuration
+	if(opticalPhysics) RegisterPhysics( new G4OpticalPhysics );
 
 }
 //----------------------------------------------------------------------//

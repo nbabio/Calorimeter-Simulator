@@ -16,17 +16,15 @@ if __name__=='__main__':
 
     theWorld = copy.copy(data['theWorld'])
     theBeam = copy.copy(data['theBeam'])
-    phantom = copy.copy(data['Phantoms'][0])
-    detector = copy.copy(data['Detectors'][0])
-    layer = copy.copy(data['Detectors'][0]['Layers'][0])
-    fiber = copy.copy(data['Detectors'][0]['Layers'][0]['Fibers'][0])
+    calorimeter = copy.copy(data['Calorimeter'])
     photons = copy.copy(data['Photons'])
     
     #Modify world directly in data
     theWorld['xSizeWorld'] = 300
     theWorld['ySizeWorld'] = 300
     theWorld['zSizeWorld'] = 300
-    #Modify beam directly in data
+    #Modify beam directly in data (the beam travels towards -z)
+    theBeam['particle'] = "proton" # proton (p), pi+ (pip), kaon+ (kp)
     theBeam['xBeamPosition'] = 0
     theBeam['yBeamPosition'] = 0
     theBeam['zBeamPosition'] = 140
@@ -43,87 +41,34 @@ if __name__=='__main__':
     theBeam['energyDistribution'] = "Gaussian"
     theBeam['energySigma'] = 1.0
     theBeam['tBeamSigma'] = 3.0
-    #Modify phantoms directly in data
-    thePhantoms = []
-    phantom['name'] = "lung"
-    phantom['xPos'] = 0
-    phantom['yPos'] = 0
-    phantom['zPos'] = 0
-    phantom['xDir'] = 0
-    phantom['yDir'] = 0
-    phantom['zDir'] = 1
-    phantom['zsize'] = 10
-    phantom['radius'] = 10
-    phantom['material'] = "lung"
-    thePhantoms.append(phantom)
+    #Modify the calorimeter directly in data: a sandwich of nLayers x (absorber + scintillator)
+    #The beam enters through the +z face (layer 0) and the photodetector will go behind the -z face
+    nLayers = 1
+    calorimeter['name'] = "calorimeter"
+    calorimeter['xPos'] = 0
+    calorimeter['yPos'] = 0
+    calorimeter['zPos'] = 0 # Center of the calorimeter
+    calorimeter['xDir'] = 0
+    calorimeter['yDir'] = 0
+    calorimeter['zDir'] = 0
+    calorimeter['xSize'] = 20
+    calorimeter['ySize'] = 20
+    calorimeter['nLayers'] = nLayers
+    calorimeter['absorberMaterial'] = "tungsten"
+    calorimeter['absorberThickness'] = 0.2 # 2 mm
+    calorimeter['scintillatorMaterial'] = "EJ200" # or "EJ204"
+    calorimeter['scintillatorThickness'] = 1.0 # dz = 1 cm. It can also be a list with one dz per layer (front to back), e.g. [1.0]*15 + [2.0]*15
     #Modify photons directly in data
-    photons['killPhotons'] = False # true = Photon is stored in the stack when it is created, false = Same as true, but the photon propagates until it is absorbed. ntuple only stores the information at the time the photon is created in both cases. false may be useful if there is a detector at the end of the scintillating fibers, or to make the visualization more realistic.
-    #Modify the detectors
-    theDetectors = []
-    zPos = [25, -25]
-    for z in zPos:
-        theDet = copy.copy(detector)
-        theDet['xPosDetector'] = 0.0
-        theDet['yPosDetector'] = 0.0
-        theDet['zPosDetector'] = z
-        theDet['xDirDetector'] = 0.0
-        theDet['xDirDetector'] = 0.0
-        theDet['xPosDetector'] = 0.0
-        theDet['xSizeDetector'] = 80.0
-        theDet['ySizeDetector'] = 80.0
-        theDet['zSizeDetector'] = 15.0
-        theLayers = []
-        zLayerPos = [-5.5, -4.5, 4.5, 5.5]
-        zDirLayer = [0.0, 90.0, 0.0, 90.0]
-        for i, ilayer in enumerate(zLayerPos):
-            theLayer = copy.copy(layer)
-            theLayer['xPosLayer'] = 0.0
-            theLayer['yPosLayer'] = 0.0
-            theLayer['zPosLayer'] = zLayerPos[i]
-            theLayer['xDirLayer'] = 0.0
-            theLayer['yDirLayer'] = 0.0
-            theLayer['zDirLayer'] = zDirLayer[i]
-            theLayer['xSizeLayer'] = 80.0
-            theLayer['ySizeLayer'] = 80.0
-            theLayer['zSizeLayer'] = 1.0
-            theFibers = []
-            NFibers = 21
-            FiberZsize = 0.8
-            FiberXsize = 0.8
-            FiberYsize = theLayer['ySizeLayer']
-            step = FiberYsize / NFibers
-            for j in range(NFibers):
-                xfiber = -theLayer['xSizeLayer']/2.0 + (j+0.5) * step #Para que la fibra no se escape de la capa EN ESTA CONFIGURACIÓN
-                yfiber = 0.0
-                zfiber = 0.0
-                theFiber = copy.copy(fiber)
-                theFiber['xPosSensor'] = xfiber
-                theFiber['yPosSensor'] = yfiber
-                theFiber['zPosSensor'] = zfiber
-                theFiber['xDirSensor'] = 90
-                theFiber['yDirSensor'] = 0
-                theFiber['zDirSensor'] = 0
-                theFiber['xSizeSensor'] = FiberXsize
-                theFiber['ySizeSensor'] = FiberYsize
-                theFiber['zSizeSensor'] = FiberZsize
-                theFiber['coreRadius'] = 0.25
-                theFiber['claddingRadius'] = 0.35
-                theFiber['length'] = FiberYsize/2.0
-                theFiber['coreMaterial'] = 'scint_core'
-                theFiber['claddingMaterial'] = 'scint_clad'
-                theFibers.append(theFiber)
-            theLayer['Fibers'] = theFibers
-            theLayers.append(theLayer)
-        theDet['Layers'] = theLayers
-        theDetectors.append(theDet)
+    photons['killPhotons'] = False # true = optical photons are killed as soon as they are created (there is no photodetector yet), false = they are tracked until they are absorbed
+    photons['storePhotons'] = False # true = every optical photon born in a scintillator is stored in the "photons" ntuple (very large files!)
+    photons['opticalPhysics'] = True # false = no optical photons at all (scintillation and Cherenkov are not simulated). Needed for high-energy productions
 
 
     newData = dict()
     newData['theWorld'] = theWorld
     newData['theBeam'] = theBeam
     newData['Photons'] = photons
-    newData['Phantoms'] = thePhantoms
-    newData['Detectors'] = theDetectors
+    newData['Calorimeter'] = calorimeter
 
     print('Making a copy')
     json_str = json.dumps(newData, indent=4)

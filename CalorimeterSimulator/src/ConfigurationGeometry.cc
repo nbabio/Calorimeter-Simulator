@@ -4,6 +4,7 @@
 #include <json/json.h>
 #include <json/value.h>
 #include "G4VisAttributes.hh"
+#include <algorithm>
 
 
 
@@ -84,100 +85,66 @@ ConfigurationGeometry::ConfigurationGeometry(G4String file) {
             energyDistribution = 0;
         }
 
+        particleName = root["theBeam"].get("particle", "proton").asString();
+
         killPhotons = root["Photons"].get("killPhotons", true).asBool();
+        storePhotons = root["Photons"].get("storePhotons", false).asBool();
+        opticalPhysics = root["Photons"].get("opticalPhysics", true).asBool();
 
-        //Definition of the Phantoms ----------------------------------------------
-        const Json::Value Phantoms = root["Phantoms"];
-        for(G4int iphan = 0; iphan < Phantoms.size(); ++iphan) {
-		G4String name = root["Phantoms"][iphan]["name"].asString().c_str();
-		G4String material = root["Phantoms"][iphan]["material"].asString().c_str();
-		G4double radius = atof(root["Phantoms"][iphan]["radius"].asString().c_str()) * CLHEP::cm;
-		G4double zsize = atof(root["Phantoms"][iphan]["zsize"].asString().c_str()) * CLHEP::cm;
-		G4double xPos = atof(root["Phantoms"][iphan]["xPos"].asString().c_str()) * CLHEP::cm;
-		G4double yPos = atof(root["Phantoms"][iphan]["yPos"].asString().c_str()) * CLHEP::cm;
-		G4double zPos = atof(root["Phantoms"][iphan]["zPos"].asString().c_str()) * CLHEP::cm;
-		G4double xDir = atof(root["Phantoms"][iphan]["xDir"].asString().c_str()) * CLHEP::degree;
-		G4double yDir = atof(root["Phantoms"][iphan]["yDir"].asString().c_str()) * CLHEP::degree;
-		G4double zDir = atof(root["Phantoms"][iphan]["zDir"].asString().c_str()) * CLHEP::degree;
-                Phantom *phantom = new Phantom(xPos, yPos, zPos, xDir, yDir, zDir, radius, zsize, name, material);
-		phantoms.push_back(phantom);
-	}
+        //Definition of the Calorimeter ----------------------------------------------
+        const Json::Value jCal = root["Calorimeter"];
+        if(jCal.isNull()) {
+            G4cerr << "\033[1;31m" << "The configuration file must contain a \"Calorimeter\" block" << "\033[0m" << G4endl;
+            goodGeometry = false;
+            return;
+        }
+        G4String name = jCal.get("name", "calorimeter").asString().c_str();
+        G4double xPos = atof(jCal["xPos"].asString().c_str()) * CLHEP::cm;
+        G4double yPos = atof(jCal["yPos"].asString().c_str()) * CLHEP::cm;
+        G4double zPos = atof(jCal["zPos"].asString().c_str()) * CLHEP::cm;
+        G4double xDir = atof(jCal["xDir"].asString().c_str()) * CLHEP::degree;
+        G4double yDir = atof(jCal["yDir"].asString().c_str()) * CLHEP::degree;
+        G4double zDir = atof(jCal["zDir"].asString().c_str()) * CLHEP::degree;
+        G4double xSizeCal = atof(jCal["xSize"].asString().c_str()) * CLHEP::cm;
+        G4double ySizeCal = atof(jCal["ySize"].asString().c_str()) * CLHEP::cm;
+        G4String absorberMaterial = jCal["absorberMaterial"].asString().c_str();
+        G4double absorberThickness = atof(jCal["absorberThickness"].asString().c_str()) * CLHEP::cm;
+        G4String scintillatorMaterial = jCal["scintillatorMaterial"].asString().c_str();
+        G4int nLayers = jCal.get("nLayers", 0).asInt();
 
-
-        //Definition of the Detectors ----------------------------------------------
-        const Json::Value Detectors = root["Detectors"];
-
-	    for(G4int idet = 0; idet < Detectors.size(); ++idet) {
-
-	    G4double xPos = atof(root["Detectors"][idet]["xPosDetector"].asString().c_str()) * CLHEP::cm;
-            G4double yPos = atof(root["Detectors"][idet]["yPosDetector"].asString().c_str()) * CLHEP::cm;
-            G4double zPos = atof(root["Detectors"][idet]["zPosDetector"].asString().c_str()) * CLHEP::cm;
-            G4double xDir = atof(root["Detectors"][idet]["xDirDetector"].asString().c_str()) * CLHEP::degree;
-            G4double yDir = atof(root["Detectors"][idet]["yDirDetector"].asString().c_str()) * CLHEP::degree;
-            G4double zDir = atof(root["Detectors"][idet]["zDirDetector"].asString().c_str()) * CLHEP::degree;
-            G4double xSize = atof(root["Detectors"][idet]["xSizeDetector"].asString().c_str()) * CLHEP::cm;
-            G4double ySize = atof(root["Detectors"][idet]["ySizeDetector"].asString().c_str()) * CLHEP::cm;
-            G4double zSize = atof(root["Detectors"][idet]["zSizeDetector"].asString().c_str()) * CLHEP::cm;
-            
-
-            if(xPos - xSize/2.0 < - uniSizeX/2.0 || yPos - ySize/2.0 < -uniSizeY/2.0 || zPos - zSize/2.0 < -uniSizeZ/2.0) {
-                G4cerr << "\033[1;31m" << "Chamber " << idet << " is not contained in the world" << "\033[0m" << G4endl;
+        //The scintillator thickness is either a single number (same dz for all the layers)
+        //or an array with one dz per layer (front to back)
+        std::vector<G4double> scintillatorThickness;
+        const Json::Value jdz = jCal["scintillatorThickness"];
+        if(jdz.isArray()) {
+            for(G4int i = 0; i < jdz.size(); i++) scintillatorThickness.push_back(jdz[i].asDouble() * CLHEP::cm);
+            if(nLayers != 0 && nLayers != (G4int) scintillatorThickness.size()) {
+                G4cerr << "\033[1;31m" << "nLayers does not match the size of scintillatorThickness" << "\033[0m" << G4endl;
                 goodGeometry = false;
                 return;
             }
-            Detector *detector = new Detector(xPos, yPos, zPos, xDir, yDir, zDir, xSize, ySize, zSize, idet);
-            
-            //Layers inside a detector ----------------------------------------------
-	        const Json::Value jLayer = root["Detectors"][idet]["Layers"];
-            
-            for(G4int icoll = 0; icoll < jLayer.size(); ++icoll) {
-                G4double xPosLayer = atof(root["Detectors"][idet]["Layers"][icoll]["xPosLayer"].asString().c_str()) * CLHEP::cm;
-                G4double yPosLayer = atof(root["Detectors"][idet]["Layers"][icoll]["yPosLayer"].asString().c_str()) * CLHEP::cm;
-                G4double zPosLayer = atof(root["Detectors"][idet]["Layers"][icoll]["zPosLayer"].asString().c_str()) * CLHEP::cm;
-                G4double xDirLayer = atof(root["Detectors"][idet]["Layers"][icoll]["xDirLayer"].asString().c_str()) * CLHEP::degree;
-                G4double yDirLayer = atof(root["Detectors"][idet]["Layers"][icoll]["yDirLayer"].asString().c_str()) * CLHEP::degree;
-                G4double zDirLayer = atof(root["Detectors"][idet]["Layers"][icoll]["zDirLayer"].asString().c_str()) * CLHEP::degree;
-                G4double xSizeLayer_ = atof(root["Detectors"][idet]["Layers"][icoll]["xSizeLayer"].asString().c_str()) * CLHEP::cm;
-                G4double ySizeLayer_ = atof(root["Detectors"][idet]["Layers"][icoll]["ySizeLayer"].asString().c_str()) * CLHEP::cm;
-                G4double zSizeLayer_ = atof(root["Detectors"][idet]["Layers"][icoll]["zSizeLayer"].asString().c_str()) * CLHEP::cm;
-	            Layer *layer = new Layer(xPosLayer, yPosLayer, zPosLayer, 
-                                        xDirLayer, yDirLayer, zDirLayer, 
-                                        xSizeLayer_, ySizeLayer_, zSizeLayer_, idet, icoll);
-                //Fibers inside a layer ----------------------------------------------
-	            const Json::Value Sensors = root["Detectors"][idet]["Layers"][icoll]["Fibers"];
-                for(G4int isens = 0; isens < Sensors.size(); ++isens) {
-                    G4double xSensPos = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["xPosSensor"].asString().c_str()) * CLHEP::cm;
-                    G4double ySensPos = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["yPosSensor"].asString().c_str()) * CLHEP::cm;
-                    G4double zSensPos = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["zPosSensor"].asString().c_str()) * CLHEP::cm;
-                    G4double xSensDir = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["xDirSensor"].asString().c_str()) * CLHEP::degree;
-                    G4double ySensDir = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["yDirSensor"].asString().c_str()) * CLHEP::degree;
-                    G4double zSensDir = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["zDirSensor"].asString().c_str()) * CLHEP::degree;
-                    G4double xSensSize = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["xSizeSensor"].asString().c_str()) * CLHEP::cm;
-                    G4double ySensSize = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["ySizeSensor"].asString().c_str()) * CLHEP::cm;
-                    G4double zSensSize = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["zSizeSensor"].asString().c_str()) * CLHEP::cm;
-                    G4double coreRad = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["coreRadius"].asString().c_str()) * CLHEP::cm;
-                    G4double claddingRad = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["claddingRadius"].asString().c_str()) * CLHEP::cm;
-                    G4double length = atof(root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["length"].asString().c_str()) * CLHEP::cm;
-                    G4String coreMaterial = root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["coreMaterial"].asString().c_str();
-                    G4String claddingMaterial = root["Detectors"][idet]["Layers"][icoll]["Fibers"][isens]["claddingMaterial"].asString().c_str();
-
-                    Fiber *fiber = new Fiber(xSensPos, ySensPos, zSensPos, 
-                                             xSensDir, ySensDir, zSensDir,
-                                             xSensSize, ySensSize, zSensSize,
-                                             idet, icoll, isens,
-                                             coreRad, claddingRad, length,
-                                            coreMaterial, claddingMaterial);
-                    layer->AddSensor(fiber);
-                    G4String label = G4String(std::to_string(idet)) + G4String("_") + 
-                                     G4String(std::to_string(icoll)) + G4String("_") + 
-                                     G4String(std::to_string(isens)); 
-                    G4String Coll = G4String("HitsCollection_") + label;
-                    registerCollection(Coll);
-		        }   
-                detector->AddLayer(layer);
-	        }
-            detectors.push_back(detector);	    
+        } else {
+            scintillatorThickness.assign(nLayers, atof(jdz.asString().c_str()) * CLHEP::cm);
         }
+
+        if(xSizeCal <= 0 || ySizeCal <= 0 || absorberThickness <= 0 || scintillatorThickness.empty() ||
+           *std::min_element(scintillatorThickness.begin(), scintillatorThickness.end()) <= 0) {
+            G4cerr << "\033[1;31m" << "The sizes, thicknesses and number of layers of the calorimeter have to be greater than 0" << "\033[0m" << G4endl;
+            goodGeometry = false;
+            return;
+        }
+        calorimeter = new Calorimeter(xPos, yPos, zPos, xDir, yDir, zDir, xSizeCal, ySizeCal,
+                                      absorberThickness, absorberMaterial,
+                                      scintillatorThickness, scintillatorMaterial, name);
+
+        G4ThreeVector halfSize = calorimeter->getSize() / 2.0;
+        if(std::abs(xPos) + halfSize.x() > uniSizeX/2.0 || std::abs(yPos) + halfSize.y() > uniSizeY/2.0 ||
+           std::abs(zPos) + halfSize.z() > uniSizeZ/2.0) {
+            G4cerr << "\033[1;31m" << "The calorimeter is not contained in the world" << "\033[0m" << G4endl;
+            goodGeometry = false;
+            return;
+        }
+        registerCollection("CalorimeterHits");
     }    
     goodGeometry = true;
     Print();
@@ -230,21 +197,13 @@ G4double ConfigurationGeometry::getSizeZ() {
 //----------------------------------------------------------------------//
 // Accesor to class information                                         //
 //----------------------------------------------------------------------//
-Phantom * ConfigurationGeometry::getPhantom(G4int a) {
-    return phantoms.at(a);
+Calorimeter * ConfigurationGeometry::getCalorimeter() {
+    return calorimeter;
 }
 //----------------------------------------------------------------------//
 //----------------------------------------------------------------------//
 
 
-//----------------------------------------------------------------------//
-// Accesor to class information                                         //
-//----------------------------------------------------------------------//
-Detector * ConfigurationGeometry::getDetector(G4int a) {
-    return detectors.at(a);
-}
-//----------------------------------------------------------------------//
-//----------------------------------------------------------------------//
 
 
 //----------------------------------------------------------------------//
@@ -370,6 +329,16 @@ G4double ConfigurationGeometry::GetMaxOpenAngle() {
 //----------------------------------------------------------------------//
 // Accesor to class information                                         //
 //----------------------------------------------------------------------//
+G4String ConfigurationGeometry::GetParticleName() {
+    return particleName;
+}
+//----------------------------------------------------------------------//
+//----------------------------------------------------------------------//
+
+
+//----------------------------------------------------------------------//
+// Accesor to class information                                         //
+//----------------------------------------------------------------------//
 G4int ConfigurationGeometry::GetNParticles() {
     return nParticles;
 }
@@ -407,24 +376,6 @@ G4int ConfigurationGeometry::GetParticleDistribution() {
 //----------------------------------------------------------------------//
 
 
-//----------------------------------------------------------------------//
-// Accesor to class information                                         //
-//----------------------------------------------------------------------//
-G4int ConfigurationGeometry::getNPhantoms() {
-    return phantoms.size();
-}
-//----------------------------------------------------------------------//
-//----------------------------------------------------------------------//
-
-
-//----------------------------------------------------------------------//
-// Accesor to class information                                         //
-//----------------------------------------------------------------------//
-G4int ConfigurationGeometry::getNDetectors() {
-    return detectors.size();
-}
-//----------------------------------------------------------------------//
-//----------------------------------------------------------------------//
 
 //----------------------------------------------------------------------//
 // createG4Objects                                                      //
@@ -433,7 +384,7 @@ void ConfigurationGeometry::createG4objects(G4LogicalVolume *mother,
                                             std::map<G4String, G4Material *> &materials, 
                                             G4SDManager *SDman) {
 
-
+    //Gantry: a cone at the position of the beam. It is made of air so that it is only a visual element
     G4ThreeVector pos;
     pos.setX(GetXBeamPosition());
     pos.setY(GetYBeamPosition());
@@ -444,22 +395,14 @@ void ConfigurationGeometry::createG4objects(G4LogicalVolume *mother,
     G4ThreeVector newpos = *rot * pos;
 
     coneVolume = new G4Cons("gantry", 0.5*CLHEP::cm, 1.0*CLHEP::cm, 3.0*CLHEP::cm, 3.5*CLHEP::cm, 5.0*CLHEP::cm, 0.0, 2.0*3.14159287);
-    conelogicalVolume = new G4LogicalVolume(coneVolume, materials["steel"], "gantrylogical");
+    conelogicalVolume = new G4LogicalVolume(coneVolume, materials["air"], "gantrylogical");
     conePhysical = new G4PVPlacement(rot, newpos, conelogicalVolume, "gantryphysical", mother, false, 0, true);
 
     G4Colour silicon(238.0/256.0, 162.0/256.0, 11.0/256.0);
     G4VisAttributes *attlog = new G4VisAttributes(silicon);
     conelogicalVolume->SetVisAttributes(attlog);
 
-    for(int i = 0; i < detectors.size(); i++) {
-        detectors[i]->createG4Objects(G4String(std::to_string(detectors[i]->detId())),
-                                      mother, materials, SDman);
-    }
-
-
-    for(int i = 0; i < phantoms.size(); i++) { 
-	    phantoms[i]->createG4Objects(mother, materials, SDman);
-    }
+    calorimeter->createG4Objects(mother, materials, SDman);
 
 }
 //----------------------------------------------------------------------//
@@ -484,9 +427,7 @@ void ConfigurationGeometry::Print() {
     G4cout << "\033[1;34m" << "---------------------------------------Geometry information-----------------------------------" << "\033[0m" << G4endl;
     G4cout << "\033[1;34m" << "The loaded geometry is as follows: " << G4endl;
     G4cout << "\033[1;34m" << "The world is contained in [" << -uniSizeX/2.0/CLHEP::cm << ", " << uniSizeX/2.0/CLHEP::cm << "]x[" << -uniSizeY/2.0/CLHEP::cm << ", " << uniSizeY/2.0/CLHEP::cm << "]x[" << -uniSizeZ/2.0/CLHEP::cm << ", " << uniSizeZ/2.0/CLHEP::cm << "]" << G4endl;
-    for(G4int i = 0; i < getNDetectors(); i++) {
-        detectors.at(i)->Print();
-    }
+    calorimeter->Print();
     G4cout << "\033[0m" << G4endl;
 }
 //----------------------------------------------------------------------//

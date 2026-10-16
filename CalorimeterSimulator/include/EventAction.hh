@@ -6,7 +6,7 @@
 #include "globals.hh"
 #include <vector>
 #include "Randomize.hh"
-#include "FiberSensorHit.hh"
+#include "CalorimeterHit.hh"
 #include "ConfigurationGeometry.hh"
 
 #ifdef G4ANALYSIS_USE
@@ -20,7 +20,7 @@ class EventActionMessenger;
 
 class EventAction : public G4UserEventAction {
 public:
-    EventAction(ConfigurationGeometry *);
+    EventAction(ConfigurationGeometry *, G4int);
     virtual ~EventAction();
 
 public:
@@ -32,6 +32,7 @@ private:
 
     EventActionMessenger *messenger;
     ConfigurationGeometry *geom;
+    G4int eventOffset;
     G4int verboseLevel;
 
 public:
@@ -41,7 +42,6 @@ public:
     inline G4int GetVerbose() const {
         return verboseLevel;
     }
-    typedef std::vector<FiberSensorHitsCollection* > FiberSensorHitsCollections;
     CLHEP::HepRandomEngine* MyRndEngine;
     CLHEP::RandGauss* myGauss;
 };

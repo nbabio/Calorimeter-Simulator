@@ -11,7 +11,7 @@ class Beam {
 
 public:
 
-    Beam(ConfigurationGeometry *, CLHEP::HepRandomEngine*);
+    Beam(ConfigurationGeometry *, CLHEP::HepRandomEngine*, G4double);
     std::vector<G4double> fireParticle();
     void updateBeam();
     G4int GetNParticles();
@@ -26,6 +26,7 @@ private:
     G4RotationMatrix rot;
     G4double vx, vy, vz;
     G4double step;
+    G4double mass;
     G4int debug;
 };
 

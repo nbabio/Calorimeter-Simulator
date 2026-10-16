@@ -8,7 +8,7 @@ class MyPhysicsList final : public G4VModularPhysicsList
 {
 
 public:
-    MyPhysicsList();
+    MyPhysicsList(G4bool);
     ~MyPhysicsList();
     //void ConstructProcess() override;
 

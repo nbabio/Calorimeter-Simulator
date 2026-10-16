@@ -35,39 +35,27 @@ void RunAction::BeginOfRunAction(const G4Run* run) {
     G4AnalysisManager* man = G4AnalysisManager::Instance();
     man->OpenFile(nameOfOutputFile.c_str());
     // Create ntuple
-    man->CreateNtuple("hits", "The hits");
-    
+    // Ntuple 0: energy deposited per layer and event
+    man->CreateNtuple("layers", "Energy deposited per layer");
     man->CreateNtupleIColumn("eventNumber");
-    man->CreateNtupleIColumn("det");
-    man->CreateNtupleIColumn("layer");
-    man->CreateNtupleIColumn("fiber");
-    man->CreateNtupleDColumn("energy");
-    man->CreateNtupleDColumn("localx");
-    man->CreateNtupleDColumn("localy");
-    man->CreateNtupleDColumn("localz");
-    man->CreateNtupleDColumn("x");
+    man->CreateNtupleIColumn("layer");              // 0 = front layer (first hit by the beam)
+    man->CreateNtupleDColumn("energyScintillator"); // MeV
+    man->CreateNtupleDColumn("energyAbsorber");     // MeV
+    man->CreateNtupleDColumn("x");                  // energy-weighted mean position in the scintillator (cm)
     man->CreateNtupleDColumn("y");
     man->CreateNtupleDColumn("z");
-    man->CreateNtupleIColumn("genID");
-    man->CreateNtupleIColumn("genTrackID");
     man->FinishNtuple();
 
-
-    // Ntuple 1: optical photons born in the fiber cores
+    // Ntuple 1: optical photons born in the scintillators (only if storePhotons is true)
     man->CreateNtuple("photons", "Optical photons at creation");
     man->CreateNtupleIColumn("eventNumber");
-    man->CreateNtupleIColumn("det");
     man->CreateNtupleIColumn("layer");
-    man->CreateNtupleIColumn("fiber");
     man->CreateNtupleIColumn("process");
     man->CreateNtupleIColumn("trackID");
     man->CreateNtupleIColumn("parentID");
     man->CreateNtupleDColumn("x");
     man->CreateNtupleDColumn("y");
     man->CreateNtupleDColumn("z");
-    man->CreateNtupleDColumn("localx");
-    man->CreateNtupleDColumn("localy");
-    man->CreateNtupleDColumn("localz");
     man->CreateNtupleDColumn("dirx");
     man->CreateNtupleDColumn("diry");
     man->CreateNtupleDColumn("dirz");
@@ -79,36 +67,13 @@ void RunAction::BeginOfRunAction(const G4Run* run) {
     man->CreateNtupleDColumn("time");
     man->FinishNtuple();
 
-    // Ntuple 2: optical photons leaving the fibers
-    man->CreateNtuple("exitPhotons", "Optical photons leaving the fibers");
+    // Ntuple 2: one row per event
+    man->CreateNtuple("events", "Primary particle and total deposited energy");
     man->CreateNtupleIColumn("eventNumber");
-    man->CreateNtupleIColumn("det");
-    man->CreateNtupleIColumn("layer");
-    man->CreateNtupleIColumn("fiber");
-    man->CreateNtupleIColumn("trackID");
-    man->CreateNtupleIColumn("parentID");
-    man->CreateNtupleIColumn("process");
-    man->CreateNtupleIColumn("exitVolume");   // 0 = core, 1 = cladding
-    man->CreateNtupleIColumn("side");         // +1 / -1 fiber end
-    man->CreateNtupleDColumn("x");
-    man->CreateNtupleDColumn("y");
-    man->CreateNtupleDColumn("z");
-    man->CreateNtupleDColumn("localx");
-    man->CreateNtupleDColumn("localy");
-    man->CreateNtupleDColumn("localz");
-    man->CreateNtupleDColumn("dirInx");
-    man->CreateNtupleDColumn("dirIny");
-    man->CreateNtupleDColumn("dirInz");
-    man->CreateNtupleDColumn("dirOutx");
-    man->CreateNtupleDColumn("dirOuty");
-    man->CreateNtupleDColumn("dirOutz");
-    man->CreateNtupleDColumn("polx");
-    man->CreateNtupleDColumn("poly");
-    man->CreateNtupleDColumn("polz");
-    man->CreateNtupleDColumn("energy");
-    man->CreateNtupleDColumn("wavelength");
-    man->CreateNtupleDColumn("time");
-    man->CreateNtupleDColumn("trackLength");
+    man->CreateNtupleIColumn("pdgID");              // 2212 = p, 211 = pi+, 321 = K+
+    man->CreateNtupleDColumn("primaryEnergy");      // kinetic energy (GeV)
+    man->CreateNtupleDColumn("energyScintillator"); // total in all the layers (GeV)
+    man->CreateNtupleDColumn("energyAbsorber");     // total in all the layers (GeV)
     man->FinishNtuple();
 
 }

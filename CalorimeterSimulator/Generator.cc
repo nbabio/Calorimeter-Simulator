@@ -10,7 +10,6 @@
 #include "G4VisExecutive.hh"
 #include "G4UIExecutive.hh"
 #include "StackingAction.hh"
-#include "SteppingAction.hh"
 
 #include <getopt.h>
 #include <stdio.h>
@@ -27,7 +26,7 @@
 //----------------------------------------------------------------------//
 
 //Get options from the command line
-bool getOptions(int , char **, G4String &, G4String &, G4String &, G4int &, G4long &, G4double &, G4int &);
+bool getOptions(int , char **, G4String &, G4String &, G4String &, G4int &, G4long &, G4double &, G4int &, G4int &);
 
 //Simply shows a cool propaganda banner
 void showBanner();
@@ -53,10 +52,11 @@ int main(int argc,char** argv) {
     G4long   randomSeed = 0;
 	G4double pt = 0;
     G4int killPhotonsOption = -1;
+    G4int eventOffset = 0;
 
     //Options all right?
-    if(!getOptions(argc, argv, nameOfInputFile, nameOfOutputFile, nameOfGeantFile, numberOfEvents, randomSeed, pt, killPhotonsOption)) {
-        G4cerr << "\033[1;31m" << "Usage: ./Generator --input NameOfGeometry.json --geant file.g4 --output outputfile --number numberOfEvents --seed seed --pt pt [--killPhotons 0/1]"  << "\033[0m" << G4endl;
+    if(!getOptions(argc, argv, nameOfInputFile, nameOfOutputFile, nameOfGeantFile, numberOfEvents, randomSeed, pt, killPhotonsOption, eventOffset)) {
+        G4cerr << "\033[1;31m" << "Usage: ./Generator --input NameOfGeometry.json --geant file.g4 --output outputfile --number numberOfEvents --seed seed --pt pt [--killPhotons 0/1] [--eventOffset N]"  << "\033[0m" << G4endl;
         return -1;
     }
 
@@ -80,7 +80,8 @@ int main(int argc,char** argv) {
         return -1;
     }
     
-    runManager->SetVerboseLevel(2);
+    runManager->SetVerboseLevel(1);
+    runManager->SetPrintProgress(1000);
 
     DetectorConstruction *myDetector = new DetectorConstruction(geomConf);
     if(myDetector == NULL) {
@@ -91,7 +92,8 @@ int main(int argc,char** argv) {
     
     runManager->SetUserInitialization(myDetector);
     
-    MyPhysicsList *myPhysicsList = new MyPhysicsList();
+    G4cout << "\033[1;34m" << "Optical physics is " << (geomConf->opticalPhysics ? "on" : "off") << "\033[0m" << G4endl;
+    MyPhysicsList *myPhysicsList = new MyPhysicsList(geomConf->opticalPhysics);
     if(myPhysicsList == NULL) {
         G4cerr << "\033[1;31m" << "Problems in the physics list" << "\033[0m" << G4endl;
         return -1;
@@ -117,7 +119,8 @@ int main(int argc,char** argv) {
 
     runManager->SetUserAction(myRunAction);
 
-    EventAction *myEventAction = new EventAction(geomConf);
+    //The event offset is added to the event number in the output, so that the files of several jobs can be merged
+    EventAction *myEventAction = new EventAction(geomConf, eventOffset);
     if(myEventAction == NULL) {
         G4cerr << "\033[1;31m" << "Problems in EventAction" << "\033[0m" << G4endl;
         return -1;
@@ -129,11 +132,8 @@ int main(int argc,char** argv) {
     G4bool killPhotons = geomConf->killPhotons;
     if(killPhotonsOption != -1) killPhotons = (killPhotonsOption == 1);
     G4cout << "\033[1;34m" << "Optical photons are " << (killPhotons ? "killed" : "tracked") << " after being stored" << "\033[0m" << G4endl;
-    StackingAction *myStackingAction = new StackingAction(killPhotons);
+    StackingAction *myStackingAction = new StackingAction(killPhotons, geomConf->storePhotons, eventOffset);
     runManager->SetUserAction(myStackingAction);
-
-    SteppingAction *mySteppingAction = new SteppingAction();
-    runManager->SetUserAction(mySteppingAction);
 
     G4VisManager* visManager = new G4VisExecutive;
     
@@ -166,7 +166,7 @@ int main(int argc,char** argv) {
 //----------------------------------------------------------------------//
 // This method will put the command line input in the variables.        //
 //----------------------------------------------------------------------//
-bool getOptions(int argc, char **argv, G4String &nameOfInputFile, G4String &nameOfOutputFile, G4String &nameOfGeantFile, G4int &numberOfEvents, G4long &randomSeed, G4double &pt, G4int &killPhotons) {
+bool getOptions(int argc, char **argv, G4String &nameOfInputFile, G4String &nameOfOutputFile, G4String &nameOfGeantFile, G4int &numberOfEvents, G4long &randomSeed, G4double &pt, G4int &killPhotons, G4int &eventOffset) {
 
     int option_iterator;
     int option_counter = 0;
@@ -182,6 +182,7 @@ bool getOptions(int argc, char **argv, G4String &nameOfInputFile, G4String &name
             {"geant",    required_argument, 0, 'g'},            
             {"pt",    required_argument, 0, 'p'},
             {"killPhotons",    required_argument, 0, 'k'},
+            {"eventOffset",    required_argument, 0, 'e'},
             {0, 0, 0, 0}
         };
         int option_index = 0;
@@ -216,6 +217,9 @@ bool getOptions(int argc, char **argv, G4String &nameOfInputFile, G4String &name
                 break;
             case 'k':
                 killPhotons = (G4int) atoi(optarg);
+                break;
+            case 'e':
+                eventOffset = (G4int) atoi(optarg);
                 break;
             case '?':
                 return false;
