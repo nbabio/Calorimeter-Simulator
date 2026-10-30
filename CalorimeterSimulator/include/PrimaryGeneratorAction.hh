@@ -40,6 +40,7 @@ private:
     G4double step;
     G4double vx, vy, vz;
     Beam *beam;
+    void generatePointSource(G4Event *);
 };
 
 #endif

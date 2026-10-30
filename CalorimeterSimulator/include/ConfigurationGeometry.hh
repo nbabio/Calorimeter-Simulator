@@ -11,6 +11,7 @@
 
 #include "globals.hh"
 #include "Calorimeter.hh"
+#include "PhinderCell.hh"
 
 
 class ConfigurationGeometry {
@@ -60,6 +61,13 @@ public:
     G4bool killPhotons;
     G4bool storePhotons;
     G4bool opticalPhysics;
+
+    // PHINDER cell and point source of optical photons (optical transport test)
+    PhinderCell *getPhinderCell();
+    G4bool pointSource = false;
+    std::vector<G4ThreeVector> sourcePositions;
+    G4int photonsPerEvent = 0;
+    G4double photonEnergy = 0;
     
     void Print();
 
@@ -77,7 +85,9 @@ private:
     G4String particleName;
 
     G4double uniSizeX, uniSizeY, uniSizeZ;
-    Calorimeter *calorimeter;
+    Calorimeter *calorimeter = nullptr;
+    PhinderCell *phinderCell = nullptr;
+    
     bool goodGeometry;
 
     G4VSolid *coneVolume;

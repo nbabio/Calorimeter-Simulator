@@ -6,6 +6,8 @@
 #include <list>
 
 #include "G4Event.hh"
+#include "G4OpticalPhoton.hh"
+#include "G4RandomDirection.hh"
 
 using namespace std;
 
@@ -60,6 +62,11 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction() {
 //----------------------------------------------------------------------//
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 
+    if(myGeom->pointSource) {
+        generatePointSource(anEvent);
+        return;
+    }
+
     G4int maxParticles = beam->GetNParticles();
        
     for ( unsigned j=0; j< maxParticles; j++) {
@@ -77,6 +84,32 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
     }
 
     beam->updateBeam();
+}
+//----------------------------------------------------------------------//
+//----------------------------------------------------------------------//
+
+//----------------------------------------------------------------------//
+// Point source of optical photons: isotropic, monochromatic, t = 0.    //
+// Each event is one source position, cycling through the list         //
+//----------------------------------------------------------------------//
+void PrimaryGeneratorAction::generatePointSource(G4Event* anEvent) {
+
+    G4int iSource = anEvent->GetEventID() % myGeom->sourcePositions.size();
+    particleGun->SetParticleDefinition(G4OpticalPhoton::Definition());
+    particleGun->SetParticleEnergy(myGeom->photonEnergy);
+    particleGun->SetParticlePosition(myGeom->sourcePositions[iSource]);
+    particleGun->SetParticleTime(0);
+
+    for(G4int i = 0; i < myGeom->photonsPerEvent; i++) {
+        //Random linear polarization perpendicular to the direction
+        G4ThreeVector dir = G4RandomDirection();
+        G4ThreeVector e1 = dir.orthogonal().unit();
+        G4ThreeVector e2 = dir.cross(e1);
+        G4double phi = CLHEP::twopi * G4UniformRand();
+        particleGun->SetParticleMomentumDirection(dir);
+        particleGun->SetParticlePolarization(std::cos(phi)*e1 + std::sin(phi)*e2);
+        particleGun->GeneratePrimaryVertex(anEvent);
+    }
 }
 //----------------------------------------------------------------------//
 //----------------------------------------------------------------------//

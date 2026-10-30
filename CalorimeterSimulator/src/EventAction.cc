@@ -134,6 +134,18 @@ void EventAction::EndOfEventAction(const G4Event* evt) {
     man->FillNtupleDColumn(2, 3, eScintillator/CLHEP::GeV);
     man->FillNtupleDColumn(2, 4, eAbsorber/CLHEP::GeV);
     man->AddNtupleRow(2);
+
+    //Point source: position of this event and number of photons fired
+    if(geom->pointSource) {
+        G4ThreeVector pos = geom->sourcePositions[evt->GetEventID() % geom->sourcePositions.size()];
+        man->FillNtupleIColumn(3, 0, eventOffset + evt->GetEventID());
+        man->FillNtupleIColumn(3, 1, evt->GetEventID() % geom->sourcePositions.size());
+        man->FillNtupleDColumn(3, 2, pos.x()/CLHEP::cm);
+        man->FillNtupleDColumn(3, 3, pos.y()/CLHEP::cm);
+        man->FillNtupleDColumn(3, 4, pos.z()/CLHEP::cm);
+        man->FillNtupleIColumn(3, 5, geom->photonsPerEvent);
+        man->AddNtupleRow(3);
+    }
 }
 //----------------------------------------------------------------------//
 //----------------------------------------------------------------------//

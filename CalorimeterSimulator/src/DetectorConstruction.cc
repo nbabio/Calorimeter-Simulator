@@ -175,6 +175,29 @@ void DetectorConstruction::ConstructMaterials() {
     auto* airMPT = new G4MaterialPropertiesTable();
     airMPT->AddProperty("RINDEX", E, std::vector<G4double>(E.size(), 1.0));
     materials["air"]->SetMaterialPropertiesTable(airMPT);
+
+    // Light guide of the PHINDER cell. Same values as CORE and CLAD in Photon_Simulator/config/defaults.py
+    // (absorption_mu is in 1/cm: 0.005 -> 200 cm, 0.002 -> 500 cm). The readout has the core refractive
+    // index so that photons cross into it without any Fresnel reflection, as in the Python catch rule
+    struct GuideData {
+        G4String name, base;
+        G4double rIndex, attLength;
+    };
+    std::vector<GuideData> guides = {
+        {"core",    "G4_POLYSTYRENE", 1.59, 200.*cm},
+        {"clad",    "G4_PLEXIGLASS",  1.49, 500.*cm},
+        {"readout", "G4_POLYSTYRENE", 1.59, 0.}
+    };
+    for(auto &gd : guides) {
+        G4Material *base = man->FindOrBuildMaterial(gd.base);
+        G4Material *mat = new G4Material(gd.name, base->GetDensity(), base);
+        auto *mpt = new G4MaterialPropertiesTable();
+        mpt->AddProperty("RINDEX", E, std::vector<G4double>(E.size(), gd.rIndex));
+        if(gd.attLength > 0) mpt->AddProperty("ABSLENGTH", E, std::vector<G4double>(E.size(), gd.attLength));
+        mat->SetMaterialPropertiesTable(mpt);
+        materials.insert(std::pair<G4String, G4Material *>(gd.name, mat));
+    }
+
 }
 //----------------------------------------------------------------------//
 //----------------------------------------------------------------------//

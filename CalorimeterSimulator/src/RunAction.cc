@@ -76,6 +76,36 @@ void RunAction::BeginOfRunAction(const G4Run* run) {
     man->CreateNtupleDColumn("energyAbsorber");     // total in all the layers (GeV)
     man->FinishNtuple();
 
+    // Ntuple 3: point source, one row per event (only with PointSource)
+    man->CreateNtuple("sources", "Point source of optical photons");
+    man->CreateNtupleIColumn("eventNumber");
+    man->CreateNtupleIColumn("sourceIndex");
+    man->CreateNtupleDColumn("x");                  // cm
+    man->CreateNtupleDColumn("y");
+    man->CreateNtupleDColumn("z");
+    man->CreateNtupleIColumn("nPhotons");           // photons fired (denominator of the efficiency)
+    man->FinishNtuple();
+
+    // Ntuple 4: optical photons that reach the readout of the PHINDER cell
+    man->CreateNtuple("arrivals", "Optical photons at the readout");
+    man->CreateNtupleIColumn("eventNumber");
+    man->CreateNtupleIColumn("trackID");
+    man->CreateNtupleDColumn("x");                  // cm
+    man->CreateNtupleDColumn("y");
+    man->CreateNtupleDColumn("z");
+    man->CreateNtupleDColumn("dirx");
+    man->CreateNtupleDColumn("diry");
+    man->CreateNtupleDColumn("dirz");
+    man->CreateNtupleDColumn("time");               // ns; with the point source (t=0) it is the transport time
+    man->FinishNtuple();
+
+    // Ntuple 5: final fate of every optical photon in the PHINDER cell. Same codes as PhotonStatus of
+    // the Python simulator: 2 CAUGHT, 7/8 ABSORBED_LAMBDA_AT_Scintillator/Guide, 9/10 LOST_AT_Scintillator/Guide
+    man->CreateNtuple("fates", "Final fate of the optical photons");
+    man->CreateNtupleIColumn("eventNumber");
+    man->CreateNtupleIColumn("fate");
+    man->FinishNtuple();
+
 }
 //----------------------------------------------------------------------//
 //----------------------------------------------------------------------//

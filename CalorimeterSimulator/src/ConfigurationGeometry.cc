@@ -91,6 +91,30 @@ ConfigurationGeometry::ConfigurationGeometry(G4String file) {
         storePhotons = root["Photons"].get("storePhotons", false).asBool();
         opticalPhysics = root["Photons"].get("opticalPhysics", true).asBool();
 
+        //Point source of optical photons: replaces the beam
+        const Json::Value jSrc = root["PointSource"];
+        pointSource = !jSrc.isNull();
+        if(pointSource) {
+            photonsPerEvent = jSrc.get("photonsPerEvent", 10000).asInt();
+            photonEnergy = jSrc.get("energy", 3.0).asDouble() * CLHEP::eV;
+            for(const auto &p : jSrc["positions"]) {
+                sourcePositions.push_back(G4ThreeVector(p[0].asDouble(), p[1].asDouble(), p[2].asDouble()) * CLHEP::cm);
+            }
+            if(sourcePositions.empty() || photonsPerEvent <= 0) {
+                G4cerr << "\033[1;31m" << "PointSource needs at least one position and photonsPerEvent > 0" << "\033[0m" << G4endl;
+                goodGeometry = false;
+                return;
+            }
+        }
+        //PHINDER cell: replaces the calorimeter (comparison with the Python photon simulator)
+        const Json::Value jCell = root["PhinderCell"];
+        if(!jCell.isNull()) {
+            phinderCell = new PhinderCell(jCell.get("scintillatorMaterial", "EJ204").asString());
+            goodGeometry = true;
+            Print();
+            return;
+        }
+
         //Definition of the Calorimeter ----------------------------------------------
         const Json::Value jCal = root["Calorimeter"];
         if(jCal.isNull()) {
@@ -208,6 +232,14 @@ Calorimeter * ConfigurationGeometry::getCalorimeter() {
 //----------------------------------------------------------------------//
 
 
+//----------------------------------------------------------------------//
+// Accesor to class information                                         //
+//----------------------------------------------------------------------//
+PhinderCell * ConfigurationGeometry::getPhinderCell() {
+    return phinderCell;
+}
+//----------------------------------------------------------------------//
+//----------------------------------------------------------------------//
 
 
 //----------------------------------------------------------------------//
@@ -388,6 +420,12 @@ void ConfigurationGeometry::createG4objects(G4LogicalVolume *mother,
                                             std::map<G4String, G4Material *> &materials, 
                                             G4SDManager *SDman) {
 
+    // If we have a PHINDER cell, we use it instead of the calorimeter
+    if(phinderCell) {
+        phinderCell->createG4Objects(mother, materials);
+        return;
+    }
+
     //Gantry: a cone at the position of the beam. It is made of air so that it is only a visual element
     G4ThreeVector pos;
     pos.setX(GetXBeamPosition());
@@ -431,7 +469,8 @@ void ConfigurationGeometry::Print() {
     G4cout << "\033[1;34m" << "---------------------------------------Geometry information-----------------------------------" << "\033[0m" << G4endl;
     G4cout << "\033[1;34m" << "The loaded geometry is as follows: " << G4endl;
     G4cout << "\033[1;34m" << "The world is contained in [" << -uniSizeX/2.0/CLHEP::cm << ", " << uniSizeX/2.0/CLHEP::cm << "]x[" << -uniSizeY/2.0/CLHEP::cm << ", " << uniSizeY/2.0/CLHEP::cm << "]x[" << -uniSizeZ/2.0/CLHEP::cm << ", " << uniSizeZ/2.0/CLHEP::cm << "]" << G4endl;
-    calorimeter->Print();
+    if(calorimeter) calorimeter->Print();
+    if(phinderCell) phinderCell->Print();
     G4cout << "\033[0m" << G4endl;
 }
 //----------------------------------------------------------------------//
