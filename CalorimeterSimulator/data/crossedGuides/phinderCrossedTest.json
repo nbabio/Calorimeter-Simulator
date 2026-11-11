@@ -1,0 +1,18 @@
+{
+    "theWorld": { "xSizeWorld": 20, "ySizeWorld": 20, "zSizeWorld": 20 },
+    "Photons":  { "killPhotons": false, "storePhotons": false, "opticalPhysics": true },
+    "theBeam": {
+        "particle": "proton",
+        "xBeamPosition": 0, "xBeamSigma": 0, "yBeamPosition": 0, "yBeamSigma": 0,
+        "zBeamPosition": 0, "xDir": 0, "yDir": 0, "zDir": 0,
+        "maxOpenAngle": 0, "nStep": 1, "nParticles": 1,
+        "energy": 1, "energySigma": 0, "energyDistribution": "Constant", "tBeamSigma": 0
+    },
+    "PhinderCell": { "scintillatorMaterial": "EJ204", "geometry": "crossedGuides" },
+    "PointSource": {
+        "photonsPerEvent": 10000,
+        "energy": 3.0,
+        "positions": [[2.5, 2.5, 0.5], [1.25, 2.5, 0.25], [3.75, 2.5, 0.75]]
+    }
+
+}

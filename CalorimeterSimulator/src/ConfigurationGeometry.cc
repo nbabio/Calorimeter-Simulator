@@ -109,7 +109,8 @@ ConfigurationGeometry::ConfigurationGeometry(G4String file) {
         //PHINDER cell: replaces the calorimeter (comparison with the Python photon simulator)
         const Json::Value jCell = root["PhinderCell"];
         if(!jCell.isNull()) {
-            phinderCell = new PhinderCell(jCell.get("scintillatorMaterial", "EJ204").asString());
+            phinderCell = new PhinderCell(jCell.get("scintillatorMaterial", "EJ204").asString(),
+                                          jCell.get("geometry", "stage1").asString());
             goodGeometry = true;
             Print();
             return;

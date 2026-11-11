@@ -97,6 +97,7 @@ void RunAction::BeginOfRunAction(const G4Run* run) {
     man->CreateNtupleDColumn("diry");
     man->CreateNtupleDColumn("dirz");
     man->CreateNtupleDColumn("time");               // ns; with the point source (t=0) it is the transport time
+    man->CreateNtupleIColumn("channel");            // readout copy number: 0 (always 0 in stage 1) or 1
     man->FinishNtuple();
 
     // Ntuple 5: final fate of every optical photon in the PHINDER cell. Same codes as PhotonStatus of

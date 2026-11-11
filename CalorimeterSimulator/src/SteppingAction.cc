@@ -74,6 +74,7 @@ void SteppingAction::UserSteppingAction(const G4Step *step) {
                 man->FillNtupleDColumn(id, 6, dir.y());
                 man->FillNtupleDColumn(id, 7, dir.z());
                 man->FillNtupleDColumn(id, 8, post->GetGlobalTime()/ns);
+                man->FillNtupleIColumn(id, 9, post->GetPhysicalVolume()->GetCopyNo());
                 man->AddNtupleRow(id);
                 fillFate(CAUGHT);
                 track->SetTrackStatus(fStopAndKill);

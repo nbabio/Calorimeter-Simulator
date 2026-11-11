@@ -7,17 +7,17 @@
 #include <map>
 
 //----------------------------------------------------------------------//
-// Single scintillator cell with one straight light guide on the +z     //
-// face, identical to phinder_bridge/scripts/phinder_stage1.py of the   //
-// Scintillator-simulation project. It is placed in the Python          //
-// coordinates (cell in [0,5]x[0,5]x[0,1] cm) so that both outputs can  //
-// be compared without any transformation.                              //
+// Single scintillator cell with two geometry modes:                    //
+// 1) stage1: one straight light guide on the +z face, identical to     //
+//    phinder_bridge/scripts/phinder_stage1.py of the                   //
+// Scintillator-simulation project                                      //
+// 2) crossedGuides: two light guides on the +z and +x faces            //
 //----------------------------------------------------------------------//
 class PhinderCell {
 
 public:
 
-    PhinderCell(G4String);
+    PhinderCell(G4String, G4String);
 
     void createG4Objects(G4LogicalVolume *, std::map<G4String, G4Material*> &);
 
@@ -25,8 +25,13 @@ public:
 
 private:
 
+    void createStage1Guide(G4LogicalVolume *, std::map<G4String, G4Material*> &);
+    void createCrossedGuides(G4LogicalVolume *, std::map<G4String, G4Material*> &);
+
     G4String scintillatorMaterial;
+    G4String geometry;              // "stage1" or "crossedGuides"
 
 };
+
 
 #endif
